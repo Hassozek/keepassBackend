@@ -1,0 +1,19 @@
+version: "3.8"
+services:
+  db:
+    image: postgres:latest
+    # Uncomment below when on Mac M1
+    platform: linux/arm64/v8
+    restart: always
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: app
+    ports:
+      - 2345:5432
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
+
