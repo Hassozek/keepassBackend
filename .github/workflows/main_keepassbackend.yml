@@ -1,7 +1,7 @@
 # Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
 # More GitHub Actions for Azure: https://github.com/Azure/actions
 
-name: Build and deploy PHP app to Azure Web App - keepassBackend
+name: Build and deploy Node.js app to Azure Web App - keepassBackend
 
 on:
   push:
@@ -18,20 +18,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
+      - name: Set up Node.js version
+        uses: actions/setup-node@v3
         with:
-          php-version: '8.2'
+          node-version: '20.x'
 
-      - name: Check if composer.json exists
-        id: check_files
-        uses: andstor/file-existence-action@v1
-        with:
-          files: 'composer.json'
-
-      - name: Run composer install if composer.json exists
-        if: steps.check_files.outputs.files_exists == 'true'
-        run: composer validate --no-check-publish && composer install --prefer-dist --no-progress
+      - name: npm install, build, and test
+        run: |
+          npm install
+          npm run build --if-present
+          npm run test --if-present
 
       - name: Zip artifact for deployment
         run: zip release.zip ./* -r
@@ -39,7 +35,7 @@ jobs:
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
-          name: php-app
+          name: node-app
           path: release.zip
 
   deploy:
@@ -56,7 +52,7 @@ jobs:
       - name: Download artifact from build job
         uses: actions/download-artifact@v4
         with:
-          name: php-app
+          name: node-app
 
       - name: Unzip artifact for deployment
         run: unzip release.zip
@@ -64,13 +60,13 @@ jobs:
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_BE4B78469F7D486DAFA3D9804A44EAFF }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_5A9EACB6DE4E451B8A6F0009AFD02AD5 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_32D4B070A75540CC94E160222A7183A2 }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_7D401B15D81043738F2A843966160B69 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_2997D1333CF54136B947FD99C1A1A96F }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_A2D82405E9244D5B8723847F840EFF01 }}
 
       - name: 'Deploy to Azure Web App'
-        uses: azure/webapps-deploy@v3
         id: deploy-to-webapp
+        uses: azure/webapps-deploy@v3
         with:
           app-name: 'keepassBackend'
           slot-name: 'Production'
