@@ -1,0 +1,40 @@
+{
+  "name": "password-manager-api",
+  "version": "1.0.0",
+  "description": "Password Manager API built with Node.js, Express, and TypeORM",
+  "main": "dist/app.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node dist/app.js",
+    "dev": "nodemon --exec ts-node --transpile-only src/app.ts",
+    "build": "tsc",
+    "typeorm": "typeorm-ts-node-commonjs",
+    "typeorm:cli": "ts-node ./node_modules/typeorm/cli.js -d typeorm.config.ts",
+    "migration:generate": "npm run typeorm:cli migration:generate src/migrations/",
+    "migration:run": "npm run typeorm:cli migration:run",
+    "migration:show": "npm run typeorm:cli migration:show",
+    "migration:revert": "npm run typeorm:cli migration:revert"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "body-parser": "^1.20.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-validator": "^7.0.1",
+    "jsonwebtoken": "^9.0.2",
+    "mssql": "^10.0.1",
+    "reflect-metadata": "^0.1.13",
+    "typeorm": "^0.3.17"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/jsonwebtoken": "^9.0.5",
+    "@types/node": "^20.10.4",
+    "nodemon": "^3.0.2",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.3.3"
+  }
+}
