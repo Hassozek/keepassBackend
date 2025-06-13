@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response, NextFunction } from "express";
 
 interface AppError extends Error {
   statusCode?: number;
@@ -9,19 +9,19 @@ export const errorHandler = (
   err: AppError,
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   const statusCode = err.statusCode || 500;
 
   // Prepare error response
   const errorResponse = {
-    message: err.message || 'Internal Server Error',
+    message: err.message || "Internal Server Error",
     errors: err.errors || undefined,
-    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+    stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
   };
 
   // Log error in development mode
-  if (process.env.NODE_ENV === 'development') {
+  if (process.env.NODE_ENV === "development") {
     console.error(`[ERROR] ${err.message}`);
     console.error(err.stack);
   }
@@ -39,7 +39,6 @@ export class HttpError extends Error {
     this.statusCode = statusCode;
     this.errors = errors;
 
-    // This is needed because we're extending a built-in class
     Object.setPrototypeOf(this, HttpError.prototype);
   }
 
@@ -47,19 +46,19 @@ export class HttpError extends Error {
     return new HttpError(400, message, errors);
   }
 
-  static unauthorized(message: string = 'Unauthorized') {
+  static unauthorized(message: string = "Unauthorized") {
     return new HttpError(401, message);
   }
 
-  static forbidden(message: string = 'Forbidden') {
+  static forbidden(message: string = "Forbidden") {
     return new HttpError(403, message);
   }
 
-  static notFound(message: string = 'Not Found') {
+  static notFound(message: string = "Not Found") {
     return new HttpError(404, message);
   }
 
-  static internalServerError(message: string = 'Internal Server Error') {
+  static internalServerError(message: string = "Internal Server Error") {
     return new HttpError(500, message);
   }
 }

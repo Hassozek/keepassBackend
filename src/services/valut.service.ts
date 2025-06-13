@@ -1,9 +1,9 @@
-import { Valut } from '../entities/Valut';
-import { User } from '../entities/User';
-import { Folder } from '../entities/Folder';
-import { Repository } from 'typeorm';
-import { AppDataSource } from '../config/data-source';
-import { HttpError } from '../middlewares/error.middleware';
+import { Valut } from "../entities/Valut";
+import { User } from "../entities/User";
+import { Folder } from "../entities/Folder";
+import { Repository } from "typeorm";
+import { AppDataSource } from "../config/data-source";
+import { HttpError } from "../middlewares/error.middleware";
 
 export class ValutService {
   private valutRepository: Repository<Valut>;
@@ -20,18 +20,21 @@ export class ValutService {
   async getValuts(user: User): Promise<Valut[]> {
     const valuts = await this.valutRepository.find({
       where: { owner: { id: user.id } },
-      relations: ['folder']
+      relations: ["folder"],
     });
 
-    return valuts.map(valut => valut.decryptPassword());
+    return valuts.map((valut) => valut.decryptPassword());
   }
 
   /**
    * Get valuts by folder ID
    */
-  async getValutsByFolder(folderId: number | null, user: User): Promise<Valut[]> {
+  async getValutsByFolder(
+    folderId: number | null,
+    user: User,
+  ): Promise<Valut[]> {
     const whereCondition: any = {
-      owner: { id: user.id }
+      owner: { id: user.id },
     };
 
     if (folderId === null) {
@@ -42,10 +45,10 @@ export class ValutService {
 
     const valuts = await this.valutRepository.find({
       where: whereCondition,
-      relations: ['folder']
+      relations: ["folder"],
     });
 
-    return valuts.map(valut => valut.decryptPassword());
+    return valuts.map((valut) => valut.decryptPassword());
   }
 
   /**
@@ -60,7 +63,7 @@ export class ValutService {
       customFields?: Array<{ name: string; value: string }>;
       folderId?: number | null;
     },
-    user: User
+    user: User,
   ): Promise<Valut> {
     const valutData: Partial<Valut> = {
       name: data.name,
@@ -76,11 +79,11 @@ export class ValutService {
       const folder = await this.folderRepository.findOne({
         where: {
           id: data.folderId,
-          owner: { id: user.id }
-        }
+          owner: { id: user.id },
+        },
       });
       if (!folder) {
-        throw HttpError.notFound('Folder not found');
+        throw HttpError.notFound("Folder not found");
       }
       valutData.folder = folder;
     } else {
@@ -90,9 +93,16 @@ export class ValutService {
     // Create the valut and encrypt the password
     const valut = this.valutRepository.create(valutData);
     valut.encryptPassword();
-    
+
+    // Set customFields explicitly
+    if (data.customFields) {
+      valut.customFields = data.customFields;
+    }
+
+
     // Save and return with decrypted password for response
     const savedValut = await this.valutRepository.save(valut);
+
     return savedValut.decryptPassword();
   }
 
@@ -109,19 +119,19 @@ export class ValutService {
       customFields?: Array<{ name: string; value: string }>;
       folderId?: number | null;
     },
-    user: User
+    user: User,
   ): Promise<Valut> {
     // Find valut by ID and verify ownership
     const valut = await this.valutRepository.findOne({
       where: {
         id,
-        owner: { id: user.id }
+        owner: { id: user.id },
       },
-      relations: ['folder']
+      relations: ["folder"],
     });
-    
+
     if (!valut) {
-      throw HttpError.notFound('Valut not found');
+      throw HttpError.notFound("Valut not found");
     }
 
     // Update fields if provided
@@ -135,7 +145,6 @@ export class ValutService {
 
     if (data.password !== undefined) {
       valut.password = data.password;
-      // Password encryption will be handled in repository layer
     }
 
     if (data.description !== undefined) {
@@ -155,54 +164,50 @@ export class ValutService {
         const folder = await this.folderRepository.findOne({
           where: {
             id: data.folderId,
-            owner: { id: user.id }
-          }
+            owner: { id: user.id },
+          },
         });
-        
+
         if (!folder) {
-          throw HttpError.notFound('Folder not found');
+          throw HttpError.notFound("Folder not found");
         }
         valut.folder = folder;
       }
     }
 
-    return await this.valutRepository.save(valut);
+    const savedValut = await this.valutRepository.save(valut);
+    return savedValut;
   }
 
   /**
    * Delete a valut
    */
   async deleteValut(id: number, user: User): Promise<void> {
-    // Find valut by ID and verify ownership
     const valut = await this.valutRepository.findOne({
       where: {
         id,
-        owner: { id: user.id }
-      }
+        owner: { id: user.id },
+      },
     });
-    
+
     if (!valut) {
-      throw HttpError.notFound('Valut not found');
+      throw HttpError.notFound("Valut not found");
     }
 
-    // Delete valut
     await this.valutRepository.remove(valut);
   }
 
-  /**
-   * Get a single valut by ID
-   */
   async getValutById(id: number, user: User): Promise<Valut> {
     const valut = await this.valutRepository.findOne({
       where: {
         id,
-        owner: { id: user.id }
+        owner: { id: user.id },
       },
-      relations: ['folder']
+      relations: ["folder"],
     });
-    
+
     if (!valut) {
-      throw HttpError.notFound('Valut not found');
+      throw HttpError.notFound("Valut not found");
     }
     return valut.decryptPassword();
   }

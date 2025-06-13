@@ -1,7 +1,7 @@
-import { Repository } from 'typeorm';
-import { AppDataSource } from '../config/data-source';
-import { Valut } from '../entities/Valut';
-import { User } from '../entities/User';
+import { Repository } from "typeorm";
+import { AppDataSource } from "../config/data-source";
+import { Valut } from "../entities/Valut";
+import { User } from "../entities/User";
 
 export class ValutRepository {
   private repository: Repository<Valut>;
@@ -13,7 +13,7 @@ export class ValutRepository {
   async findById(id: number): Promise<Valut | null> {
     const valut = await this.repository.findOne({
       where: { id },
-      relations: ['folder', 'owner']
+      relations: ["folder", "owner"],
     });
 
     if (valut) {
@@ -26,10 +26,10 @@ export class ValutRepository {
   async findByOwner(owner: User): Promise<Valut[]> {
     const valuts = await this.repository.find({
       where: { owner: { id: owner.id } },
-      relations: ['folder']
+      relations: ["folder"],
     });
 
-    return valuts.map(valut => valut.decryptPassword());
+    return valuts.map((valut) => valut.decryptPassword());
   }
 
   async findByFolder(folderId: number | null, owner: User): Promise<Valut[]> {
@@ -38,27 +38,26 @@ export class ValutRepository {
     if (folderId === null) {
       whereCondition = {
         folder: null,
-        owner: { id: owner.id }
+        owner: { id: owner.id },
       };
     } else {
       whereCondition = {
         folder: { id: folderId },
-        owner: { id: owner.id }
+        owner: { id: owner.id },
       };
     }
 
     const valuts = await this.repository.find({
       where: whereCondition,
-      relations: ['folder']
+      relations: ["folder"],
     });
 
-    return valuts.map(valut => valut.decryptPassword());
+    return valuts.map((valut) => valut.decryptPassword());
   }
 
   async create(valutData: Partial<Valut>): Promise<Valut> {
     const valut = this.repository.create(valutData);
 
-    // Encrypt password before saving
     if (valut.password) {
       valut.encryptPassword();
     }
@@ -68,7 +67,6 @@ export class ValutRepository {
   }
 
   async save(valut: Valut): Promise<Valut> {
-    // Encrypt password before saving
     valut.encryptPassword();
 
     const savedValut = await this.repository.save(valut);
@@ -96,9 +94,9 @@ export class ValutRepository {
     const valut = await this.repository.findOne({
       where: {
         id,
-        owner: { id: owner.id }
+        owner: { id: owner.id },
       },
-      relations: ['folder']
+      relations: ["folder"],
     });
 
     if (valut) {

@@ -12,6 +12,7 @@ import {
 } from "typeorm";
 import { User } from "./User";
 import { Folder } from "./Folder";
+import * as crypto from "crypto";
 
 @Entity({ name: "Valut" })
 export class Valut {
@@ -27,10 +28,13 @@ export class Valut {
   @Column({ type: "varchar", length: 255 })
   password: string;
 
+  // Private storage for decrypted password
+  private _decryptedPassword: string | null = null;
+
   @Column({ type: "text", nullable: true })
   description: string | null;
 
-  @Column({ type: "nvarchar", length: "MAX", nullable: true })
+  @Column({ type: "text", nullable: true })
   customFieldsJson: string | null;
 
   // Private property to store customFields
@@ -51,7 +55,11 @@ export class Valut {
 
   set customFields(value: Array<{ name: string; value: string }> | null) {
     this._customFields = value;
-    this.customFieldsJson = value ? JSON.stringify(value) : null;
+    if (value) {
+      this.customFieldsJson = JSON.stringify(value);
+    } else {
+      this.customFieldsJson = null;
+    }
   }
 
   @ManyToOne(() => Folder, (folder) => folder.valuts, { nullable: true })
@@ -68,30 +76,121 @@ export class Valut {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  // For testing purposes, we're skipping actual encryption/decryption
-
-  // This is a placeholder for password encryption
   encryptPassword() {
-    // Skip encryption for testing
+    try {
+      const encryptionKey = process.env.ENCRYPTION_KEY;
+      if (!encryptionKey) {
+        console.error("ENCRYPTION_KEY not found in environment variables");
+        return this;
+      }
+
+      if (!this.password || this.password.trim().length === 0) {
+        return this;
+      }
+
+      // If already encrypted (contains the :), don't encrypt again
+      if (this.password.includes(":")) {
+        return this;
+      }
+
+      // Store decrypted version for later use
+      this._decryptedPassword = this.password;
+
+      // Generate a random initialization vector
+      const iv = crypto.randomBytes(16);
+
+      // Create cipher using AES-256-CBC
+      const cipher = crypto.createCipheriv(
+        "aes-256-cbc",
+        Buffer.from(encryptionKey.substring(0, 32), "utf-8"),
+        iv,
+      );
+
+      // Encrypt the password
+      let encryptedPassword = cipher.update(this.password, "utf8", "hex");
+      encryptedPassword += cipher.final("hex");
+
+      // Store the IV with the encrypted password
+      this.password = iv.toString("hex") + ":" + encryptedPassword;
+    } catch (error) {
+      console.error("Error encrypting password:", error);
+    }
+
     return this;
   }
 
-  // This is a placeholder for password decryption
+  // Method to decrypt the password
   decryptPassword() {
-    // Skip decryption for testing
+    try {
+      const encryptionKey = process.env.ENCRYPTION_KEY;
+      if (!encryptionKey) {
+        console.error("ENCRYPTION_KEY not found in environment variables");
+        return this;
+      }
+
+      if (
+        !this.password ||
+        this.password.trim().length === 0 ||
+        !this.password.includes(":")
+      ) {
+        return this;
+      }
+
+      // Extract IV and encrypted password
+      const parts = this.password.split(":");
+      if (parts.length !== 2) {
+        console.error("Invalid encrypted password format");
+        return this;
+      }
+
+      const iv = Buffer.from(parts[0], "hex");
+      const encryptedPassword = parts[1];
+
+      // Create decipher
+      const decipher = crypto.createDecipheriv(
+        "aes-256-cbc",
+        Buffer.from(encryptionKey.substring(0, 32), "utf-8"),
+        iv,
+      );
+
+      // Decrypt the password
+      let decryptedPassword = decipher.update(encryptedPassword, "hex", "utf8");
+      decryptedPassword += decipher.final("utf8");
+
+      // Store the decrypted version
+      this._decryptedPassword = decryptedPassword;
+      this.password = decryptedPassword;
+    } catch (error) {
+      console.error("Error decrypting password:", error);
+    }
+
     return this;
   }
 
   // Helper method to convert to a simple object for API responses
   toResponseObject() {
-    // Skip decryption for testing
+    let customFieldsData = [];
+
+    if (this.customFieldsJson) {
+      try {
+        customFieldsData = JSON.parse(this.customFieldsJson);
+      } catch (e) {
+        console.error("Error parsing customFieldsJson in response:", e);
+      }
+    } else if (this._customFields) {
+      customFieldsData = this._customFields;
+    }
+
+    // Return decrypted password if available, otherwise use the stored one
+    const passwordToUse = this._decryptedPassword || this.password;
+
     return {
       id: this.id.toString(),
       name: this.name,
       email: this.email,
-      password: this.password,
+      password: passwordToUse,
       description: this.description,
-      customFields: this.customFields || [],
+      customFields: customFieldsData || [],
       folderId: this.folder ? this.folder.id.toString() : null,
     };
   }
@@ -99,18 +198,29 @@ export class Valut {
   // TypeORM lifecycle hooks
   @BeforeInsert()
   beforeInsertActions() {
-    // Skip encryption for testing
-    // Make sure customFields are properly serialized
-    if (this.customFields && !this.customFieldsJson) {
-      this.customFieldsJson = JSON.stringify(this.customFields);
+    if (this._customFields && !this.customFieldsJson) {
+      this.customFieldsJson = JSON.stringify(this._customFields);
     }
+
+    // Encrypt password before saving to database
+    this.encryptPassword();
   }
 
   @BeforeUpdate()
   beforeUpdateActions() {
     // Make sure customFields are properly serialized
-    if (this.customFields && typeof this.customFields !== "string") {
-      this.customFieldsJson = JSON.stringify(this.customFields);
+    if (this._customFields) {
+      this.customFieldsJson = JSON.stringify(this._customFields);
+    }
+
+    // Encrypt password before updating in database
+    this.encryptPassword();
+  }
+
+  // Force save custom fields before insert
+  beforeSave() {
+    if (this._customFields && !this.customFieldsJson) {
+      this.customFieldsJson = JSON.stringify(this._customFields);
     }
   }
 
@@ -126,5 +236,10 @@ export class Valut {
         this._customFields = [];
       }
     }
+
+    // Clear the decrypted password cache after loading from DB
+    this._decryptedPassword = null;
   }
+
+  // Remove duplicate lifecycle hooks
 }

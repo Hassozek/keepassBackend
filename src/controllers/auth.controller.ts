@@ -1,8 +1,7 @@
-import { Request, Response, NextFunction } from 'express';
-import { body } from 'express-validator';
-import { AuthService } from '../services/auth.service';
-import { validate } from '../middlewares/validation.middleware';
-import { HttpError } from '../middlewares/error.middleware';
+import { Request, Response, NextFunction } from "express";
+import { body } from "express-validator";
+import { AuthService } from "../services/auth.service";
+import { validate } from "../middlewares/validation.middleware";
 
 export class AuthController {
   private authService: AuthService;
@@ -41,26 +40,22 @@ export class AuthController {
    * Input validation for registration
    */
   validateRegister = validate([
-    body('email')
+    body("email")
       .isEmail()
-      .withMessage('Please provide a valid email')
+      .withMessage("Please provide a valid email")
       .normalizeEmail(),
-    body('password')
-      .isLength({ min: 6 })
-      .withMessage('Password must be at least 6 characters long')
+    body("password").notEmpty().withMessage("Password is required"),
   ]);
 
   /**
    * Input validation for login
    */
   validateLogin = validate([
-    body('email')
+    body("email")
       .isEmail()
-      .withMessage('Please provide a valid email')
+      .withMessage("Please provide a valid email")
       .normalizeEmail(),
-    body('password')
-      .notEmpty()
-      .withMessage('Password is required')
+    body("password").notEmpty().withMessage("Password is required"),
   ]);
 }
 

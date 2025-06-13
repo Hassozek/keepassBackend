@@ -31,16 +31,4 @@ export class User {
 
   @OneToMany(() => Valut, (valut) => valut.owner)
   valuts: Valut[];
-
-  // This method is used for serialization to prevent password from being sent to client
-  toJSON() {
-    const { password, ...userWithoutPassword } = this;
-    return userWithoutPassword;
-  }
-
-  // Helper method to get user roles - Matches Symfony implementation
-  getRoles(): string[] {
-    const roles = ["ROLE_USER"];
-    return Array.from(new Set(roles));
-  }
 }

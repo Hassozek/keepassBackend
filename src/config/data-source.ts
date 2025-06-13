@@ -19,6 +19,10 @@ const dataSourceConfig = {
   synchronize: true, // Enable automatic schema synchronization for development
   logging: true, // Enable logging for better debugging
   entities: [User, Folder, Valut],
+  entitySkipConstructor: false,
+  entityPropertyLogging: true,
+  // Enable entity listeners for lifecycle hooks
+  entityListeners: true,
   options: {
     encrypt: process.env.DB_ENCRYPT === "true",
     trustServerCertificate: process.env.DB_TRUST_SERVER_CERTIFICATE === "true",
